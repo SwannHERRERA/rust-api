@@ -2,17 +2,19 @@ use diesel;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
-use schema::chapters;
-use schema::chapters::dsl::chapters as all_chapters;
+use chrono::NaiveDateTime;
+
+use crate::schema::chapters;
+use crate::schema::chapters::dsl::chapters as all_chapters;
 
 #[derive(Queryable)]
 pub struct Chapters {
   pub id: i32,
   pub title: String,
   pub author: String,
-  pub created_at: Instant,
-  pub updated_at: Instant,
-  pub published_at: Instant,
+  pub created_at: Option<NaiveDateTime>,
+  pub updated_at: Option<NaiveDateTime>,
+  pub published_at: Option<NaiveDateTime>,
   pub published: bool,
 }
 
@@ -25,52 +27,52 @@ pub struct NewChapter {
 }
 
 impl Chapters {
-  pub fn show(id: i32, conn: &PgConnection) -> Vec<Chapter> {
+  pub fn show(id: i32, conn: &PgConnection) -> Vec<Chapters> {
     all_chapters
       .find(id)
-      .load::<Chapter>(conn)
+      .load::<Chapters>(conn)
       .expect("Error loading chapter")
   }
 
-  pub fn all(conn: &PgConnection) -> Vec<Chapter> {
+  pub fn all(conn: &PgConnection) -> Vec<Chapters> {
     all_chapters
-      .order(chapter::id.desc())
-      .load::<Chapter>(conn)
+      .order(chapters::id.desc())
+      .load::<Chapters>(conn)
       .expect("Error loading chapters")
   }
 
-  pub fn update_by_id(id: i32, conn: &PgConnection, chapter: NewChapter) -> bool {
-    use schema::chapters::dsl::{author as a, published as p, title as t};
+  pub fn update_by_id(id: i32, conn: &PgConnection, chapters: NewChapter) -> bool {
+    use crate::schema::chapters::dsl::{author as a, published as p, title as t};
     let NewChapter {
       title,
       author,
       published,
-    } = chapter;
+    } = chapters;
 
     diesel::update(all_chapters.find(id))
       .set((a.eq(author), p.eq(published), t.eq(title)))
-      .get_result::<Chapter>(conn)
+      .get_result::<Chapters>(conn)
       .is_ok()
   }
 
   pub fn insert(chapter: NewChapter, conn: &PgConnection) -> bool {
-    diesel::insert_into(chapter::table)
+    diesel::insert_into(chapters::table)
       .values(&chapter)
       .execute(conn)
       .is_ok()
   }
 
   pub fn delete_by_id(id: i32, conn: &PgConnection) -> bool {
-    if Chapter::show(id, conn).is_empty() {
+    if Chapters::show(id, conn).is_empty() {
       return false;
     }
     diesel::delete(all_chapters.find(id)).execute(conn).is_ok()
   }
 
-  pub fn all_by_athor(author: String, conn: &PgConnection) -> Vec<Chapter> {
+  pub fn all_by_athor(author: String, conn: &PgConnection) -> Vec<Chapters> {
     all_chapters
-      .filter(chapter::author.eq(author))
-      .load<Chapter>(conn)
+      .filter(chapters::author.eq(author))
+      .load::<Chapters>(conn)
       .expect("Error loading Chapters by author")
   }
 }
