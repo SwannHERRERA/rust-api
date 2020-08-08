@@ -2,12 +2,14 @@ use diesel;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
+use serde::Serialize;
+
 use chrono::NaiveDateTime;
 
 use crate::schema::chapters;
 use crate::schema::chapters::dsl::chapters as all_chapters;
 
-#[derive(Queryable)]
+#[derive(Queryable, Serialize, Clone)]
 pub struct Chapters {
   pub id: i32,
   pub title: String,
